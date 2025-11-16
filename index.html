@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roman Predictor Pro ⚽🔥</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            margin-top: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 17px;
+            color: white;
+            background: #007bff;
+            border: none;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            font-size: 17px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+        .error {
+            background: #ffe6e6;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 4px solid red;
+            border-radius: 6px;
+        }
+        .good {
+            background: #e8ffe8;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 4px solid green;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Roman Predictor Pro ⚽🔥</h2>
+    <p>Inteligentní sportovní předpovědi pomocí AI</p>
+
+    <h3>🔑 Vlož svůj OpenAI API klíč:</h3>
+    <input id="apiKey" type="password" placeholder="sk-..." />
+    <button onclick="saveKey()">Uložit klíč</button>
+
+    <h3>⚽ Vyber sport:</h3>
+    <select id="sport">
+        <option value="fotbal">Fotbal</option>
+        <option value="hokej">Hokej</option>
+        <option value="tenis">Tenis</option>
+        <option value="basketbal">Basketbal</option>
+        <option value="americky_fotbal">Americký fotbal</option>
+        <option value="bojove_sporty">Bojové sporty</option>
+    </select>
+
+    <button onclick="getPrediction()">Získat předpověď</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+function saveKey() {
+    const key = document.getElementById("apiKey").value;
+    if (!key) {
+        alert("Musíš vložit API klíč!");
+        return;
+    }
+    localStorage.setItem("OPENAI_KEY", key);
+    alert("🔐 API klíč uložen!");
+}
+
+async function getPrediction() {
+    const apiKey = localStorage.getItem("OPENAI_KEY");
+    const sport = document.getElementById("sport").value;
+    const resultBox = document.getElementById("result");
+
+    if (!apiKey) {
+        resultBox.innerHTML = `<div class="error">❌ Nejdřív vlož a ulož svůj API klíč!</div>`;
+        return;
+    }
+
+    resultBox.innerHTML = "⏳ Načítám předpověď...";
+
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + apiKey
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [
+                    { role: "system", content: "Jsi profesionální sportovní analytik." },
+                    { role: "user", content: "Vygeneruj předpověď na sport: " + sport }
+                ]
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.choices || !data.choices[0]) {
+            resultBox.innerHTML = `<div class="error">❌ Chyba API: ${JSON.stringify(data)}</div>`;
+            return;
+        }
+
+        const text = data.choices[0].message.content;
+
+        resultBox.innerHTML = `<div class="good">✅ <b>Předpověď:</b><br>${text}</div>`;
+
+    } catch (err) {
+        resultBox.innerHTML = `<div class="error">❌ Chyba: ${err}</div>`;
+    }
+}
+</script>
+
+</body>
+</html>
