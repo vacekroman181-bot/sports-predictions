@@ -12,6 +12,7 @@
             margin: 0;
             padding: 0;
         }
+
         .container {
             max-width: 700px;
             margin: auto;
@@ -21,6 +22,7 @@
             border-radius: 12px;
             box-shadow: 0px 0px 12px rgba(0,0,0,0.12);
         }
+
         select, input, button {
             width: 100%;
             padding: 12px;
@@ -29,6 +31,7 @@
             border-radius: 8px;
             border: 1px solid #aaa;
         }
+
         button {
             background: #007bff;
             color: white;
@@ -36,9 +39,11 @@
             font-size: 18px;
             cursor: pointer;
         }
+
         button:hover {
-            background: #0065d4;
+            background: #005fcc;
         }
+
         .good {
             background: #e8ffe8;
             padding: 15px;
@@ -46,6 +51,7 @@
             border-radius: 5px;
             margin-top: 15px;
         }
+
         .bad {
             background: #ffe8e8;
             padding: 15px;
@@ -53,6 +59,7 @@
             border-radius: 5px;
             margin-top: 15px;
         }
+
         .history {
             background: #fff7d1;
             padding: 12px;
@@ -64,13 +71,14 @@
 </head>
 
 <body>
+
 <div class="container">
     <h2>Roman Predictor Pro ⚽🔥</h2>
-    <p>Inteligentní sportovní předpovědi pomocí AI</p>
+    <p>Profesionální sportovní analýzy pomocí AI</p>
 
     <h3>🔑 Vlož svůj OpenAI API klíč:</h3>
-    <input id="apiKey" type="password" placeholder="sk-xxxxxxxxxxxxxxxx">
-    <button onclick="saveKey()">Uložit klíč</button>
+    <input id="apiKey" type="password" placeholder="sk-xxxxxxxxxxxxxx">
+    <button onclick="saveKey()">Uložit API klíč</button>
 
     <h3>⚽ Vyber sport:</h3>
     <select id="sport">
@@ -83,44 +91,59 @@
     </select>
 
     <h3>📝 Zadej turnaj nebo zápas:</h3>
-    <input id="event" type="text" placeholder="Např. ATP Bergamo – Mager vs. Collarini">
+    <input id="event" type="text" placeholder="Např. ATP Bergamo – Cobolli vs Arnaldi">
 
     <button onclick="getPrediction()">Získat předpověď</button>
 
     <div id="result"></div>
 
-    <h3>📌 Historie předpovědí</h3>
+    <h3>📌 Historie předpovědí:</h3>
     <div id="history"></div>
+
 </div>
 
 <script>
+
+// Uložení API klíče
 function saveKey() {
     const key = document.getElementById("apiKey").value;
     if (key.length < 20) {
-        alert("❗ Klíč je příliš krátký!");
+        alert("❗ API klíč nevypadá validně.");
         return;
     }
     localStorage.setItem("apiKey", key);
-    alert("🔐 API klíč uložen.");
+    alert("API klíč uložen!");
 }
 
+// Načíst historii po načtení stránky
+window.onload = () => {
+    const savedKey = localStorage.getItem("apiKey");
+    if (savedKey) document.getElementById("apiKey").value = savedKey;
+
+    loadHistory();
+};
+
+// Funkce pro získání předpovědi
 async function getPrediction() {
     const apiKey = localStorage.getItem("apiKey");
     const sport = document.getElementById("sport").value;
     const event = document.getElementById("event").value;
 
     if (!apiKey) {
-        alert("❗ Nejprve vlož svůj OpenAI API klíč!");
-        return;
-    }
-    if (event.length < 3) {
-        alert("❗ Zadej název turnaje nebo zápasu!");
+        alert("❗ Nejprve vlož svůj API klíč.");
         return;
     }
 
-    document.getElementById("result").innerHTML = "<div class='good'>⏳ Generuji předpověď…</div>";
+    if (event.length < 3) {
+        alert("❗ Zadej název zápasu nebo turnaje.");
+        return;
+    }
+
+    document.getElementById("result").innerHTML =
+        "<div class='good'>⏳ Generuji profesionální analýzu…</div>";
 
     try {
+
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -132,18 +155,35 @@ async function getPrediction() {
                 messages: [{
                     role: "user",
                     content: `
-Analyzuj následující sportovní událost a vytvoř PŘESNOU předpověď výsledku.
+Jsi profesionální sportovní analytik a expertní tipér.
+Analyzuj následující sportovní událost:
 
 Sport: ${sport}
-Událost: ${event}
+Zápas / Událost: ${event}
 
-VŽDY napiš:
-- pravděpodobného vítěze (1 jméno)
-- procentuální šance na výhru (např. 62% vs 38%)
-- stručné odůvodnění: forma, povrch, statistiky, slabiny, styl
-- doporučení pro sázku (value bet, rizika, tip)
+Vytvoř strukturovanou, praktickou analýzu:
 
-Piš stručně, jasně a prakticky – jako profesionální sportovní analytik.
+1) 🧠 ANALÝZA FORMY
+- porovnej formu hráčů / týmů
+- H2H (pokud je dostupné)
+- povrch, styl, taktické faktory
+
+2) 🎯 FAVORIT A PROČ
+- kdo je mírným nebo jasným favoritem
+- stručné a praktické důvody
+
+3) 📊 PROCENTA VÝSLEDKU
+- procenta pravděpodobnosti výhry obou stran (např. 61% : 39%)
+
+4) 💸 HLAVNÍ TIP
+- nejpravděpodobnější tip (výhra / over / handicap)
+- krátké zdůvodnění
+
+5) 🔄 ALTERNATIVNÍ TIP
+- bezpečnější nebo hodnotnější možnost
+
+6) ⚠ RIZIKA
+- co může zápas otočit
                     `
                 }]
             })
@@ -153,25 +193,57 @@ Piš stručně, jasně a prakticky – jako profesionální sportovní analytik.
 
         if (!data.choices) {
             document.getElementById("result").innerHTML =
-                "<div class='bad'>❌ Chyba API: " + JSON.stringify(data) + "</div>";
+                "<div class='bad'>❌ Chyba API:<br>" + JSON.stringify(data) + "</div>";
             return;
         }
 
         const text = data.choices[0].message.content;
 
-        // Výpis
+        // Výstup
         document.getElementById("result").innerHTML =
             `<div class='good'><b>✅ Předpověď:</b><br>${text.replace(/\n/g, "<br>")}</div>`;
 
-        // Uložení historie
-        document.getElementById("history").innerHTML +=
-            `<div class='history'><b>📌 ${event} (${sport}) – ${new Date().toLocaleString()}</b><br>${text.replace(/\n/g, "<br>")}</div>`;
+        // Uložit do historie
+        saveToHistory(event, sport, text);
 
     } catch (err) {
         document.getElementById("result").innerHTML =
             `<div class='bad'>❌ Chyba: ${err}</div>`;
     }
 }
+
+function saveToHistory(event, sport, text) {
+    const old = JSON.parse(localStorage.getItem("history") || "[]");
+
+    old.push({
+        time: new Date().toLocaleString(),
+        event,
+        sport,
+        text
+    });
+
+    localStorage.setItem("history", JSON.stringify(old));
+    loadHistory();
+}
+
+function loadHistory() {
+    const h = JSON.parse(localStorage.getItem("history") || "[]");
+    const box = document.getElementById("history");
+
+    if (h.length === 0) {
+        box.innerHTML = "<i>Historie je zatím prázdná…</i>";
+        return;
+    }
+
+    box.innerHTML = h.slice().reverse().map(item => `
+        <div class="history">
+            <b>📌 ${item.event} (${item.sport})</b><br>
+            <small>${item.time}</small><br><br>
+            ${item.text.replace(/\n/g, "<br>")}
+        </div>
+    `).join("");
+}
+
 </script>
 
 </body>
