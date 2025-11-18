@@ -4,66 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roman Predictor Pro ⚽🔥</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
             background: #f2f2f2;
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
         }
         .container {
             background: white;
             padding: 25px;
-            margin-top: 20px;
+            margin: 20px auto;
             border-radius: 12px;
             width: 90%;
-            max-width: 500px;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+        }
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
         }
         button {
-            width: 100%;
-            padding: 12px;
-            font-size: 17px;
-            color: white;
             background: #007bff;
+            color: white;
             border: none;
-            border-radius: 8px;
-            margin-top: 10px;
+            cursor: pointer;
+            font-size: 18px;
         }
-        select, input {
-            width: 100%;
-            padding: 12px;
-            font-size: 17px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            margin-top: 10px;
-        }
-        .error {
-            background: #ffe6e6;
-            padding: 10px;
-            margin-top: 10px;
-            border-left: 4px solid red;
-            border-radius: 6px;
+        button:hover {
+            background: #005fcc;
         }
         .good {
             background: #e8ffe8;
-            padding: 10px;
-            margin-top: 10px;
-            border-left: 4px solid green;
+            padding: 12px;
+            margin-top: 15px;
+            border-left: 4px solid #35b331;
+            border-radius: 6px;
+        }
+        .history-box {
+            background: #fff8e1;
+            padding: 12px;
+            margin-top: 20px;
+            border-left: 4px solid #ffc107;
             border-radius: 6px;
         }
     </style>
 </head>
+
 <body>
 
 <div class="container">
+
     <h2>Roman Predictor Pro ⚽🔥</h2>
     <p>Inteligentní sportovní předpovědi pomocí AI</p>
 
     <h3>🔑 Vlož svůj OpenAI API klíč:</h3>
-    <input id="apiKey" type="password" placeholder="sk-..." />
+    <input id="apiKey" type="password" placeholder="sk-xxxxxxxxxxxxxxxx">
     <button onclick="saveKey()">Uložit klíč</button>
 
     <h3>⚽ Vyber sport:</h3>
@@ -77,41 +78,53 @@
     </select>
 
     <h3>📝 Zadej turnaj nebo zápas:</h3>
-    <input id="event" type="text" placeholder="Např. ATP Bergamo – všechny dnešní zápasy" />
+    <input id="event" type="text" placeholder="Např.: ATP Bergamo, Slavia–Plzeň, UFC 301 ...">
 
     <button onclick="getPrediction()">Získat předpověď</button>
 
     <div id="result"></div>
+
+    <h3>📚 Historie předpovědí</h3>
+    <div id="history"></div>
+
 </div>
 
 <script>
+
 function saveKey() {
-    const key = document.getElementById("apiKey").value;
-    if (!key) {
-        alert("Musíš vložit API klíč!");
+    const key = document.getElementById("apiKey").value.trim();
+    if (key.length < 10) {
+        alert("⚠️ API klíč nevypadá validně!");
         return;
     }
-    localStorage.setItem("OPENAI_KEY", key);
+    localStorage.setItem("apiKey", key);
     alert("🔐 API klíč uložen!");
 }
 
+window.onload = () => {
+    const savedKey = localStorage.getItem("apiKey");
+    if (savedKey) {
+        document.getElementById("apiKey").value = savedKey;
+    }
+    loadHistory();
+};
+
+
 async function getPrediction() {
-    const apiKey = localStorage.getItem("OPENAI_KEY");
+    const apiKey = localStorage.getItem("apiKey");
     const sport = document.getElementById("sport").value;
-    const eventName = document.getElementById("event").value;
-    const resultBox = document.getElementById("result");
+    const event = document.getElementById("event").value.trim();
 
     if (!apiKey) {
-        resultBox.innerHTML = `<div class="error">❌ Nejdřív vlož a ulož svůj API klíč!</div>`;
+        alert("❗ Nejprve vlož svůj OpenAI API klíč!");
+        return;
+    }
+    if (event.length < 3) {
+        alert("❗ Zadej název turnaje nebo zápasu!");
         return;
     }
 
-    if (!eventName) {
-        resultBox.innerHTML = `<div class="error">❌ Napiš název turnaje nebo zápasu!</div>`;
-        return;
-    }
-
-    resultBox.innerHTML = "⏳ Načítám předpověď...";
+    document.getElementById("result").innerHTML = "<p>⏳ Načítám předpověď...</p>";
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -122,38 +135,60 @@ async function getPrediction() {
             },
             body: JSON.stringify({
                 model: "gpt-4o-mini",
-                messages: [
-                    { role: "system", content: "Jsi profesionální sportovní analytik." },
-                    { role: "user", content: `Udělej podrobnou sportovní předpověď.
-Sport: ${sport}
-Událost: ${eventName}
-
-U každého zápasu napiš:
-1) aktuální formu hráčů/týmů
-2) H2H
-3) kdo je favorit
-4) pravděpodobnost v %
-5) doporučený tip
-` }
-                ]
+                messages: [{
+                    role: "user",
+                    content: `Udělej sportovní předpověď. SPORT: ${sport}. ZÁPAS/TURNAJ: ${event}.`
+                }]
             })
         });
 
         const data = await response.json();
 
-        if (!data.choices || !data.choices[0]) {
-            resultBox.innerHTML = `<div class="error">❌ Chyba API: ${JSON.stringify(data)}</div>`;
-            return;
-        }
-
         const text = data.choices[0].message.content;
 
-        resultBox.innerHTML = `<div class="good">✅ <b>Předpověď:</b><br>${text}</div>`;
+        document.getElementById("result").innerHTML =
+            `<div class='good'><b>✅ Předpověď:</b><br>${text}</div>`;
+
+        saveToHistory(event, sport, text);
 
     } catch (err) {
-        resultBox.innerHTML = `<div class="error">❌ Chyba: ${err}</div>`;
+        document.getElementById("result").innerHTML =
+            `<div style="color:red;">Chyba API: ${err}</div>`;
     }
 }
+
+function saveToHistory(event, sport, text) {
+    const old = JSON.parse(localStorage.getItem("history") || "[]");
+
+    old.push({
+        time: new Date().toLocaleString(),
+        event,
+        sport,
+        text
+    });
+
+    localStorage.setItem("history", JSON.stringify(old));
+    loadHistory();
+}
+
+function loadHistory() {
+    const box = document.getElementById("history");
+    const h = JSON.parse(localStorage.getItem("history") || "[]");
+
+    if (h.length === 0) {
+        box.innerHTML = "<i>Žádná historie zatím není…</i>";
+        return;
+    }
+
+    box.innerHTML = h.slice().reverse().map(item => `
+        <div class="history-box">
+            <b>📌 ${item.event} (${item.sport})</b><br>
+            <small>${item.time}</small><br><br>
+            ${item.text}
+        </div>
+    `).join("");
+}
+
 </script>
 
 </body>
