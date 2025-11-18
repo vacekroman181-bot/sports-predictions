@@ -76,6 +76,9 @@
         <option value="bojove_sporty">Bojové sporty</option>
     </select>
 
+    <h3>📝 Zadej turnaj nebo zápas:</h3>
+    <input id="event" type="text" placeholder="Např. ATP Bergamo – všechny dnešní zápasy" />
+
     <button onclick="getPrediction()">Získat předpověď</button>
 
     <div id="result"></div>
@@ -95,10 +98,16 @@ function saveKey() {
 async function getPrediction() {
     const apiKey = localStorage.getItem("OPENAI_KEY");
     const sport = document.getElementById("sport").value;
+    const eventName = document.getElementById("event").value;
     const resultBox = document.getElementById("result");
 
     if (!apiKey) {
         resultBox.innerHTML = `<div class="error">❌ Nejdřív vlož a ulož svůj API klíč!</div>`;
+        return;
+    }
+
+    if (!eventName) {
+        resultBox.innerHTML = `<div class="error">❌ Napiš název turnaje nebo zápasu!</div>`;
         return;
     }
 
@@ -115,7 +124,17 @@ async function getPrediction() {
                 model: "gpt-4o-mini",
                 messages: [
                     { role: "system", content: "Jsi profesionální sportovní analytik." },
-                    { role: "user", content: "Vygeneruj předpověď na sport: " + sport }
+                    { role: "user", content: `Udělej podrobnou sportovní předpověď.
+Sport: ${sport}
+Událost: ${eventName}
+
+U každého zápasu napiš:
+1) aktuální formu hráčů/týmů
+2) H2H
+3) kdo je favorit
+4) pravděpodobnost v %
+5) doporučený tip
+` }
                 ]
             })
         });
