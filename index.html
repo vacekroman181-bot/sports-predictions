@@ -8,58 +8,63 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f2f2f2;
+            background: #f1f1f1;
             margin: 0;
             padding: 0;
         }
         .container {
+            max-width: 700px;
+            margin: auto;
             background: white;
             padding: 25px;
-            margin: 20px auto;
+            margin-top: 20px;
             border-radius: 12px;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+            box-shadow: 0px 0px 12px rgba(0,0,0,0.12);
         }
-        input, select, button {
+        select, input, button {
             width: 100%;
             padding: 12px;
             margin-top: 10px;
-            border-radius: 8px;
             font-size: 16px;
-            border: 1px solid #ccc;
+            border-radius: 8px;
+            border: 1px solid #aaa;
         }
         button {
             background: #007bff;
             color: white;
             border: none;
-            cursor: pointer;
             font-size: 18px;
+            cursor: pointer;
         }
         button:hover {
-            background: #005fcc;
+            background: #0065d4;
         }
         .good {
             background: #e8ffe8;
-            padding: 12px;
+            padding: 15px;
+            border-left: 4px solid green;
+            border-radius: 5px;
             margin-top: 15px;
-            border-left: 4px solid #35b331;
-            border-radius: 6px;
         }
-        .history-box {
-            background: #fff8e1;
+        .bad {
+            background: #ffe8e8;
+            padding: 15px;
+            border-left: 4px solid red;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .history {
+            background: #fff7d1;
             padding: 12px;
-            margin-top: 20px;
-            border-left: 4px solid #ffc107;
             border-radius: 6px;
+            margin-top: 15px;
+            border-left: 4px solid #d4b300;
         }
     </style>
 </head>
 
 <body>
-
 <div class="container">
-
     <h2>Roman Predictor Pro ⚽🔥</h2>
     <p>Inteligentní sportovní předpovědi pomocí AI</p>
 
@@ -78,42 +83,31 @@
     </select>
 
     <h3>📝 Zadej turnaj nebo zápas:</h3>
-    <input id="event" type="text" placeholder="Např.: ATP Bergamo, Slavia–Plzeň, UFC 301 ...">
+    <input id="event" type="text" placeholder="Např. ATP Bergamo – Mager vs. Collarini">
 
     <button onclick="getPrediction()">Získat předpověď</button>
 
     <div id="result"></div>
 
-    <h3>📚 Historie předpovědí</h3>
+    <h3>📌 Historie předpovědí</h3>
     <div id="history"></div>
-
 </div>
 
 <script>
-
 function saveKey() {
-    const key = document.getElementById("apiKey").value.trim();
-    if (key.length < 10) {
-        alert("⚠️ API klíč nevypadá validně!");
+    const key = document.getElementById("apiKey").value;
+    if (key.length < 20) {
+        alert("❗ Klíč je příliš krátký!");
         return;
     }
     localStorage.setItem("apiKey", key);
-    alert("🔐 API klíč uložen!");
+    alert("🔐 API klíč uložen.");
 }
-
-window.onload = () => {
-    const savedKey = localStorage.getItem("apiKey");
-    if (savedKey) {
-        document.getElementById("apiKey").value = savedKey;
-    }
-    loadHistory();
-};
-
 
 async function getPrediction() {
     const apiKey = localStorage.getItem("apiKey");
     const sport = document.getElementById("sport").value;
-    const event = document.getElementById("event").value.trim();
+    const event = document.getElementById("event").value;
 
     if (!apiKey) {
         alert("❗ Nejprve vlož svůj OpenAI API klíč!");
@@ -124,7 +118,7 @@ async function getPrediction() {
         return;
     }
 
-    document.getElementById("result").innerHTML = "<p>⏳ Načítám předpověď...</p>";
+    document.getElementById("result").innerHTML = "<div class='good'>⏳ Generuji předpověď…</div>";
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -137,58 +131,47 @@ async function getPrediction() {
                 model: "gpt-4o-mini",
                 messages: [{
                     role: "user",
-                    content: `Udělej sportovní předpověď. SPORT: ${sport}. ZÁPAS/TURNAJ: ${event}.`
+                    content: `
+Analyzuj následující sportovní událost a vytvoř PŘESNOU předpověď výsledku.
+
+Sport: ${sport}
+Událost: ${event}
+
+VŽDY napiš:
+- pravděpodobného vítěze (1 jméno)
+- procentuální šance na výhru (např. 62% vs 38%)
+- stručné odůvodnění: forma, povrch, statistiky, slabiny, styl
+- doporučení pro sázku (value bet, rizika, tip)
+
+Piš stručně, jasně a prakticky – jako profesionální sportovní analytik.
+                    `
                 }]
             })
         });
 
         const data = await response.json();
 
+        if (!data.choices) {
+            document.getElementById("result").innerHTML =
+                "<div class='bad'>❌ Chyba API: " + JSON.stringify(data) + "</div>";
+            return;
+        }
+
         const text = data.choices[0].message.content;
 
+        // Výpis
         document.getElementById("result").innerHTML =
-            `<div class='good'><b>✅ Předpověď:</b><br>${text}</div>`;
+            `<div class='good'><b>✅ Předpověď:</b><br>${text.replace(/\n/g, "<br>")}</div>`;
 
-        saveToHistory(event, sport, text);
+        // Uložení historie
+        document.getElementById("history").innerHTML +=
+            `<div class='history'><b>📌 ${event} (${sport}) – ${new Date().toLocaleString()}</b><br>${text.replace(/\n/g, "<br>")}</div>`;
 
     } catch (err) {
         document.getElementById("result").innerHTML =
-            `<div style="color:red;">Chyba API: ${err}</div>`;
+            `<div class='bad'>❌ Chyba: ${err}</div>`;
     }
 }
-
-function saveToHistory(event, sport, text) {
-    const old = JSON.parse(localStorage.getItem("history") || "[]");
-
-    old.push({
-        time: new Date().toLocaleString(),
-        event,
-        sport,
-        text
-    });
-
-    localStorage.setItem("history", JSON.stringify(old));
-    loadHistory();
-}
-
-function loadHistory() {
-    const box = document.getElementById("history");
-    const h = JSON.parse(localStorage.getItem("history") || "[]");
-
-    if (h.length === 0) {
-        box.innerHTML = "<i>Žádná historie zatím není…</i>";
-        return;
-    }
-
-    box.innerHTML = h.slice().reverse().map(item => `
-        <div class="history-box">
-            <b>📌 ${item.event} (${item.sport})</b><br>
-            <small>${item.time}</small><br><br>
-            ${item.text}
-        </div>
-    `).join("");
-}
-
 </script>
 
 </body>
